@@ -43,7 +43,7 @@ The node supports performing web searches with the following features:
 - **Time Range**: Filter results by time (Day, Week, Month, Year, or Any Time)
 - **Safe Search**: Set safety level (Off, Moderate, or Strict)
 - **Page Number**: Specify which page of results to retrieve
-- **Format**: Choose output format (JSON, HTML, or RSS)
+- **Format**: Choose output format (JSON, CSV, HTML, or RSS)
 - **Engines**: Comma-separated list of engines to use (for example: `google,duckduckgo`)
 - **Enabled Plugins**: Comma-separated list of plugins to enable
 - **Disabled Plugins**: Comma-separated list of plugins to disable
@@ -76,10 +76,33 @@ To use this node, you need to configure credentials for your SearXNG instance:
        "disabled_plugins": "Tracker_URL_remover",
        "theme": "simple",
        "image_proxy": true,
-       "autocomplete": "duckduckgo"
+       "autocomplete": "duckduckgo",
+       "format": "json"
      }
    }
    ```
+
+### Response behavior by format
+
+- **JSON format**:
+  - Returns parsed `results` plus `metadata` and `raw` payload.
+  - `Return Single Response` only applies to JSON responses with available parsed results.
+- **Non-JSON formats (CSV/HTML/RSS)**:
+  - Returns the payload as `rawResponse` without assuming `results` are present.
+  - Includes `metadata.format` so downstream nodes can branch on response format.
+
+#### Non-JSON example response
+
+```json
+{
+  "success": true,
+  "query": "privacy search",
+  "metadata": {
+    "format": "csv"
+  },
+  "rawResponse": "title,url,content\n..."
+}
+```
 
 ## Compatibility
 

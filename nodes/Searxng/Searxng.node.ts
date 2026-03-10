@@ -160,6 +160,7 @@ export class Searxng implements INodeType {
             name: "format",
             type: "options",
             options: [
+              { name: "CSV", value: "csv" },
               { name: "HTML", value: "html" },
               { name: "JSON", value: "json" },
               { name: "RSS", value: "rss" },
@@ -286,10 +287,12 @@ export class Searxng implements INodeType {
             .join(",");
         };
 
+        const format = additionalFields.format || "json";
+
         const queryParameters: Record<string, string | number | boolean> = {
           q: query,
           categories: categories.join(","),
-          format: additionalFields.format || "json",
+          format,
         };
 
         if (additionalFields.language) {
@@ -331,47 +334,70 @@ export class Searxng implements INodeType {
         }
 
         try {
+          const acceptHeaderByFormat: Record<string, string> = {
+            json: "application/json",
+            csv: "text/csv",
+            rss: "application/rss+xml, application/xml",
+            html: "text/html",
+          };
+
           const response = await this.helpers.httpRequest({
             method: "GET" as const,
             url: `${credentials.apiUrl}/search`,
             qs: queryParameters,
             headers: {
-              Accept: "application/json",
+              ...(acceptHeaderByFormat[format]
+                ? { Accept: acceptHeaderByFormat[format] }
+                : {}),
               Authorization: `Bearer ${credentials.apiKey}`,
             },
           });
 
-          // Format output for AI compatibility
-          const formattedResults = Array.isArray(response.results)
-            ? response.results.map((result: any) => ({
-              title: result.title,
-              url: result.url,
-              content: result.content,
-              snippet: result.snippet || result.content,
-            }))
-            : [];
+          if (format === "json") {
+            // Format output for AI compatibility
+            const formattedResults = Array.isArray(response.results)
+              ? response.results.map((result: any) => ({
+                title: result.title,
+                url: result.url,
+                content: result.content,
+                snippet: result.snippet || result.content,
+              }))
+              : [];
 
-          if (singleResponse && formattedResults.length > 0) {
-            // Return only the content from the first result when singleResponse is enabled
-            returnData.push({
-              json: {
-                success: true,
-                query,
-                answer: formattedResults[0].content || formattedResults[0].snippet,
-              },
-            });
+            if (singleResponse && formattedResults.length > 0) {
+              // Return only the content from the first result when singleResponse is enabled
+              returnData.push({
+                json: {
+                  success: true,
+                  query,
+                  answer: formattedResults[0].content || formattedResults[0].snippet,
+                },
+              });
+            } else {
+              returnData.push({
+                json: {
+                  success: true,
+                  query,
+                  results: formattedResults,
+                  metadata: {
+                    format,
+                    total: response.number_of_results,
+                    time: response.search_time,
+                    engine: response.engine,
+                  },
+                  raw: response, // Include raw response for compatibility
+                },
+              });
+            }
           } else {
             returnData.push({
               json: {
                 success: true,
                 query,
-                results: formattedResults,
                 metadata: {
-                  total: response.number_of_results,
-                  time: response.search_time,
-                  engine: response.engine,
+                  format,
                 },
-                raw: response, // Include raw response for compatibility
+                rawResponse: response,
               },
             });
           }
