@@ -167,6 +167,53 @@ export class Searxng implements INodeType {
             default: "json",
             description: "Output format of the search results",
           },
+          {
+            displayName: "Engines",
+            name: "engines",
+            type: "string",
+            default: "",
+            placeholder: "google,duckduckgo,bing",
+            description: "Comma-separated list of engines to use",
+          },
+          {
+            displayName: "Enabled Plugins",
+            name: "enabled_plugins",
+            type: "string",
+            default: "",
+            placeholder: "Hash_plugin,Self_Information",
+            description: "Comma-separated list of plugins to enable",
+          },
+          {
+            displayName: "Disabled Plugins",
+            name: "disabled_plugins",
+            type: "string",
+            default: "",
+            placeholder: "Tracker_URL_remover",
+            description: "Comma-separated list of plugins to disable",
+          },
+          {
+            displayName: "Theme",
+            name: "theme",
+            type: "string",
+            default: "",
+            placeholder: "simple",
+            description: "Theme used for the response rendering",
+          },
+          {
+            displayName: "Image Proxy",
+            name: "image_proxy",
+            type: "boolean",
+            default: false,
+            description: "Whether to proxy image URLs through SearXNG",
+          },
+          {
+            displayName: "Autocomplete",
+            name: "autocomplete",
+            type: "string",
+            default: "",
+            placeholder: "duckduckgo",
+            description: "Autocomplete backend to use",
+          },
         ],
       },
     ],
@@ -215,9 +262,31 @@ export class Searxng implements INodeType {
           safesearch?: string;
           pageno?: number;
           format?: string;
+          engines?: string | string[];
+          enabled_plugins?: string | string[];
+          disabled_plugins?: string | string[];
+          theme?: string;
+          image_proxy?: boolean;
+          autocomplete?: string;
         };
 
-        const queryParameters: Record<string, string | number> = {
+        const serializeListParam = (value?: string | string[]): string | undefined => {
+          if (!value) {
+            return undefined;
+          }
+
+          if (Array.isArray(value)) {
+            return value.join(",");
+          }
+
+          return value
+            .split(",")
+            .map((entry) => entry.trim())
+            .filter((entry) => entry.length > 0)
+            .join(",");
+        };
+
+        const queryParameters: Record<string, string | number | boolean> = {
           q: query,
           categories: categories.join(","),
           format: additionalFields.format || "json",
@@ -234,6 +303,31 @@ export class Searxng implements INodeType {
         }
         if (additionalFields.pageno) {
           queryParameters.pageno = additionalFields.pageno;
+        }
+        if (additionalFields.theme) {
+          queryParameters.theme = additionalFields.theme;
+        }
+        if (additionalFields.autocomplete) {
+          queryParameters.autocomplete = additionalFields.autocomplete;
+        }
+
+        const engines = serializeListParam(additionalFields.engines);
+        if (engines) {
+          queryParameters.engines = engines;
+        }
+
+        const enabledPlugins = serializeListParam(additionalFields.enabled_plugins);
+        if (enabledPlugins) {
+          queryParameters.enabled_plugins = enabledPlugins;
+        }
+
+        const disabledPlugins = serializeListParam(additionalFields.disabled_plugins);
+        if (disabledPlugins) {
+          queryParameters.disabled_plugins = disabledPlugins;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(additionalFields, "image_proxy")) {
+          queryParameters.image_proxy = additionalFields.image_proxy as boolean;
         }
 
         try {

@@ -44,6 +44,12 @@ The node supports performing web searches with the following features:
 - **Safe Search**: Set safety level (Off, Moderate, or Strict)
 - **Page Number**: Specify which page of results to retrieve
 - **Format**: Choose output format (JSON, HTML, or RSS)
+- **Engines**: Comma-separated list of engines to use (for example: `google,duckduckgo`)
+- **Enabled Plugins**: Comma-separated list of plugins to enable
+- **Disabled Plugins**: Comma-separated list of plugins to disable
+- **Theme**: Theme name to use for rendering (for example: `simple`)
+- **Image Proxy**: Proxy image URLs through the SearXNG instance
+- **Autocomplete**: Autocomplete backend to use (for example: `duckduckgo`)
 
 ## Credentials
 
@@ -64,7 +70,13 @@ To use this node, you need to configure credentials for your SearXNG instance:
      "additionalFields": {
        "language": "en",
        "time_range": "month",
-       "safesearch": "1"
+       "safesearch": "1",
+       "engines": "google,duckduckgo",
+       "enabled_plugins": "Hash_plugin",
+       "disabled_plugins": "Tracker_URL_remover",
+       "theme": "simple",
+       "image_proxy": true,
+       "autocomplete": "duckduckgo"
      }
    }
    ```
