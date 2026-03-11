@@ -48,7 +48,12 @@ module.exports = {
     {
       files: ['./nodes/**/*.ts'],
       plugins: ['eslint-plugin-n8n-nodes-base'],
-      extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended', 'plugin:n8n-nodes-base/nodes', 'prettier'],
+      extends: [
+        'eslint:recommended',
+        'plugin:@typescript-eslint/recommended',
+        'plugin:n8n-nodes-base/nodes',
+        'prettier',
+      ],
       rules: {
         'n8n-nodes-base/node-class-description-inputs-wrong-regular-node': 'off',
         'n8n-nodes-base/node-class-description-outputs-wrong': 'off',
