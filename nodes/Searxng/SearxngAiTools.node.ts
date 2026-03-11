@@ -62,16 +62,15 @@ class SearxngToolkit extends (LangChainToolkitBase as any) {
 
 export class SearxngAiTools implements INodeType {
   description: INodeTypeDescription = {
-    displayName: 'SearXNG Search Tool',
+    displayName: 'SearXNG Search AI Tool',
     name: 'searxngAiTools',
     icon: 'file:searxng.svg',
     group: ['output'],
     version: 1,
     description: 'Expose SearXNG web search as a structured AI tool for use with the AI Agent node',
-    defaults: { name: 'SearXNG Search Tool' },
+    defaults: { name: 'SearXNG Search AI Tool' },
     inputs: [],
     outputs: [{ type: 'ai_tool' as NodeConnectionType, displayName: 'Tool' }],
-    usableAsTool: true,
     credentials: [
       {
         name: CREDENTIAL_NAME,

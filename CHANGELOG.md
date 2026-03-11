@@ -2,12 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## 0.5.0 (2026-03-11)
+
+### Changed
+
+- Renamed the dedicated node to **SearXNG Search AI Tool** for clearer AI-specific identification in the tool picker.
+- Removed the redundant `usableAsTool` flag from the dedicated AI tool node to avoid duplicate tool-style listings.
+
 ## 0.4.0 (2026-03-11)
 
 ### Changed
 
 - Renamed the main node UI and docs consistently to **SearXNG Search** while keeping internal node and credential identifiers unchanged for compatibility.
-- Marked the dedicated **SearXNG Search Tool** node as `usableAsTool` so it can appear in n8n's `Add tool` flow on supported n8n versions.
 
 ## 0.3.0 (2026-03-10)
 

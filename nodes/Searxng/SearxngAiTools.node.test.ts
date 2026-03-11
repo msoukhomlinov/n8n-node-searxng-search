@@ -12,8 +12,8 @@ describe('SearXNG Search AI tool node', () => {
     const node = new SearxngAiTools();
 
     expect(node.description.name).toBe('searxngAiTools');
-    expect(node.description.displayName).toBe('SearXNG Search Tool');
-    expect(node.description.usableAsTool).toBe(true);
+    expect(node.description.displayName).toBe('SearXNG Search AI Tool');
+    expect(node.description.usableAsTool).toBeUndefined();
     expect(node.description.outputs).toEqual([{ type: 'ai_tool', displayName: 'Tool' }]);
   });
 });
