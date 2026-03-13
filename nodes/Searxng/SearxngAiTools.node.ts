@@ -14,6 +14,7 @@ import { CREDENTIAL_NAME } from './constants';
 import { getRuntimeSchemaBuilders } from './ai-tools/schema-generator';
 import { TOOL_NAME, TOOL_DESCRIPTION } from './ai-tools/description-builders';
 import { executeSearchTool } from './ai-tools/tool-executor';
+import { wrapError, ERROR_TYPES } from './ai-tools/error-formatter';
 import { RuntimeDynamicStructuredTool, runtimeZod } from './ai-tools/runtime';
 
 // Resolve runtime schemas once at module load.
@@ -71,6 +72,9 @@ export class SearxngAiTools implements INodeType {
     // tree so instanceof checks pass in both execution paths:
     //   - AI Agent: supplyData() → tool definition extracted → execute() called
     //   - MCP Trigger (including queue mode): supplyData() → tool.invoke(args) → func() called
+    //
+    // MCP annotations (future): when n8n supports MCP tool annotations, add:
+    //   annotations: { title: 'SearXNG Web Search', readOnlyHint: true, openWorldHint: true }
     const tool = new RuntimeDynamicStructuredTool({
       name: TOOL_NAME,
       description: TOOL_DESCRIPTION,
@@ -118,7 +122,11 @@ export class SearxngAiTools implements INodeType {
       return [
         [
           {
-            json: { error: `Unknown tool: ${firstItemTool}` } as IDataObject,
+            json: wrapError(
+              'search', 'search', ERROR_TYPES.SEARCH_ERROR,
+              `Unknown tool: ${firstItemTool}`,
+              `Use the tool name "${TOOL_NAME}" for search requests.`,
+            ) as unknown as IDataObject,
             pairedItem: { item: 0 },
           },
         ],

@@ -8,7 +8,8 @@ export const TOOL_DESCRIPTION =
   'Optionally filter by language (BCP-47 code, e.g. "en", "de"), time range ("day", "month", "year"), ' +
   'safe search level ("0"=off, "1"=moderate, "2"=strict), page number, or specific engines (comma-separated engine names). ' +
   'Always parse the JSON response — never format results as prose. ' +
-  'If results are empty, try broadening the query or removing category/engine filters.';
+  'If results are empty, try broadening the query or removing category/engine filters. ' +
+  'Response format: { schemaVersion: "1", success: boolean, resource: "search", operation: "search", result?: { items, count, totalAvailable, query }, errorType?: string, message?: string, nextAction?: string }.';
 
 export const PARAM_DESCRIPTIONS = {
   query:

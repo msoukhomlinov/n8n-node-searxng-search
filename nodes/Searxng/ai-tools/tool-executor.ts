@@ -1,7 +1,7 @@
 import type { IExecuteFunctions, ISupplyDataFunctions } from 'n8n-workflow';
 import { searxngRequest, type SearxngSearchResponse } from '../lib/transport';
 import { normalizeCommaSeparatedValues, normalizeSingleValue } from '../lib/helpers';
-import { formatToolError } from './error-formatter';
+import { wrapSuccess, wrapError, ERROR_TYPES, formatToolError } from './error-formatter';
 
 /**
  * n8n framework injects these fields into every DynamicStructuredTool call.
@@ -33,7 +33,9 @@ export async function executeSearchTool(
 
   try {
     if (!query || query.trim().length === 0) {
-      return formatToolError(new Error('query is required'), undefined);
+      return JSON.stringify(
+        wrapError('search', 'search', ERROR_TYPES.MISSING_QUERY, 'query is required', 'Provide a non-empty search query string.'),
+      );
     }
 
     const queryParameters: Record<string, string | number | boolean> = {
@@ -90,12 +92,14 @@ export async function executeSearchTool(
 
     const results = allResults.slice(0, maxResults);
 
-    return JSON.stringify({
-      success: true,
-      query,
-      results,
-      total_available: allResults.length,
-    });
+    return JSON.stringify(
+      wrapSuccess('search', 'search', {
+        items: results,
+        count: results.length,
+        totalAvailable: allResults.length,
+        query,
+      }),
+    );
   } catch (error) {
     return formatToolError(error, query);
   }

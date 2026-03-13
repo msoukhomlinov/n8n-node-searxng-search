@@ -15,31 +15,39 @@ type DynamicStructuredToolCtor = new (fields: {
 
 export type RuntimeZod = typeof ZodNamespace;
 
+/**
+ * Anchor candidates — packages in n8n's dependency tree that can serve as
+ * a createRequire() anchor to resolve @langchain/core and zod from n8n's
+ * module tree (not this package's bundled copies).
+ */
+const ANCHOR_CANDIDATES = ['@langchain/classic/agents', 'langchain/agents'] as const;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getRuntimeRequire(): any {
-  // Anchor: @langchain/classic/agents is always in n8n's dependency tree.
-  // NOTE: if n8n drops @langchain/classic in a future version, update this
-  // anchor to another package in n8n's tree that depends on @langchain/core.
-  try {
-    const classicAgentsPath = require.resolve('@langchain/classic/agents') as string;
-    const { createRequire } = require('module') as {
-      createRequire: (filename: string) => NodeRequire;
-    };
-    return createRequire(classicAgentsPath);
-  } catch {
-    // @langchain/classic not found — fall back to local require.
-    // In this state, instanceof checks may fail across module boundaries (dev/CI environments).
-    // In production n8n this should not happen; if it does, the fallback still allows the
-    // node to function but MCP Trigger queue mode may silently drop the tool.
-    console.warn(
-      '[SearxngAiTools] @langchain/classic/agents not found — falling back to local require. ' +
-        'instanceof checks may fail in MCP Trigger queue mode.',
-    );
-    return require;
+function getRuntimeRequire(): { runtimeReq: any; diagnostic: string | null } {
+  const errors: string[] = [];
+
+  for (const anchor of ANCHOR_CANDIDATES) {
+    try {
+      const anchorPath = require.resolve(anchor) as string;
+      const { createRequire } = require('module') as {
+        createRequire: (filename: string) => NodeRequire;
+      };
+      return { runtimeReq: createRequire(anchorPath), diagnostic: null };
+    } catch (e) {
+      errors.push(`${anchor}: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
+
+  // All candidates failed — return null so the node can still register,
+  // but record a diagnostic for Proxy error messages.
+  const diagnostic =
+    `[SearxngAiTools] No runtime anchor found. Tried: ${ANCHOR_CANDIDATES.join(', ')}. ` +
+    `Errors: ${errors.join(' | ')}`;
+  console.warn(diagnostic);
+  return { runtimeReq: null, diagnostic };
 }
 
-const runtimeRequire = getRuntimeRequire();
+const { runtimeReq, diagnostic } = getRuntimeRequire();
 
 // Wrap module-level resolutions so a missing package produces a clear error at
 // execution time (via NodeOperationError in supplyData) rather than a cryptic
@@ -49,17 +57,19 @@ let _RuntimeDynamicStructuredTool: DynamicStructuredToolCtor | undefined;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _runtimeZod: RuntimeZod | undefined;
 
-try {
-  const coreTools = runtimeRequire('@langchain/core/tools') as Record<string, unknown>;
-  _RuntimeDynamicStructuredTool = coreTools['DynamicStructuredTool'] as DynamicStructuredToolCtor;
-} catch (e) {
-  console.warn('[SearxngAiTools] Failed to resolve @langchain/core/tools from runtime require:', e);
-}
+if (runtimeReq) {
+  try {
+    const coreTools = runtimeReq('@langchain/core/tools') as Record<string, unknown>;
+    _RuntimeDynamicStructuredTool = coreTools['DynamicStructuredTool'] as DynamicStructuredToolCtor;
+  } catch (e) {
+    console.warn('[SearxngAiTools] Failed to resolve @langchain/core/tools from runtime require:', e);
+  }
 
-try {
-  _runtimeZod = runtimeRequire('zod') as RuntimeZod;
-} catch (e) {
-  console.warn('[SearxngAiTools] Failed to resolve zod from runtime require:', e);
+  try {
+    _runtimeZod = runtimeReq('zod') as RuntimeZod;
+  } catch (e) {
+    console.warn('[SearxngAiTools] Failed to resolve zod from runtime require:', e);
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -70,7 +80,8 @@ export const RuntimeDynamicStructuredTool: DynamicStructuredToolCtor = new Proxy
       if (!_RuntimeDynamicStructuredTool) {
         throw new Error(
           'RuntimeDynamicStructuredTool: @langchain/core/tools could not be resolved from n8n\'s module tree. ' +
-            'Ensure @langchain/core is installed in the n8n environment.',
+            'Ensure @langchain/core is installed in the n8n environment.' +
+            (diagnostic ? ` Diagnostic: ${diagnostic}` : ''),
         );
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -91,7 +102,8 @@ export const runtimeZod: RuntimeZod = new Proxy({} as RuntimeZod, {
     if (!_runtimeZod) {
       throw new Error(
         `runtimeZod: zod could not be resolved from n8n's module tree (accessing .${String(prop)}). ` +
-          'Ensure zod is installed in the n8n environment.',
+          'Ensure zod is installed in the n8n environment.' +
+          (diagnostic ? ` Diagnostic: ${diagnostic}` : ''),
       );
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
